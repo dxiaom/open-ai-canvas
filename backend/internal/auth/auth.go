@@ -29,22 +29,22 @@ var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,32}$`)
 type AuthError = kernel.AppError
 
 type RegisterRequest struct {
-	Username      string `json:"username"`
-	Email         string `json:"email"`
-	EmailCode     string `json:"emailCode"`
-	Phone         string `json:"phone"`
-	SMSCode       string `json:"smsCode"`
-	Ticket        string `json:"ticket"`
-	DisplayName   string `json:"displayName"`
-	Password      string `json:"password"`
-	AcceptedTerms bool   `json:"acceptedTerms"`
+	LoginContext  LoginContext `json:"-"`
+	Username      string       `json:"username"`
+	Email         string       `json:"email"`
+	EmailCode     string       `json:"emailCode"`
+	Phone         string       `json:"phone"`
+	SMSCode       string       `json:"smsCode"`
+	Ticket        string       `json:"ticket"`
+	DisplayName   string       `json:"displayName"`
+	Password      string       `json:"password"`
+	AcceptedTerms bool         `json:"acceptedTerms"`
 }
 
 type LoginRequest struct {
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-	IP        string `json:"-"`
-	UserAgent string `json:"-"`
+	LoginContext LoginContext `json:"-"`
+	Username     string       `json:"username"`
+	Password     string       `json:"password"`
 }
 
 type PublicAuthSettings struct {
@@ -248,7 +248,12 @@ func (s *Service) Register(req RegisterRequest) (*AuthSessionResult, error) {
 	if err := s.host.EnsureSignupBonus(user.ID); err != nil {
 		return nil, err
 	}
-	return s.createAuthSession(&user)
+	event := NewLoginLog("password", "registration", req.LoginContext)
+	result, err := s.createAuthSession(&user, event)
+	if err != nil {
+		return nil, s.recordLoginFailure(event, err)
+	}
+	return result, nil
 }
 
 // LoginRateLimitSubject uses the same account lookup as password authentication.
@@ -264,7 +269,14 @@ func (s *Service) LoginRateLimitSubject(account string) (string, error) {
 	return "user:" + user.ID, nil
 }
 
-func (s *Service) Login(req LoginRequest) (*AuthSessionResult, error) {
+func (s *Service) Login(req LoginRequest) (result *AuthSessionResult, err error) {
+	event := NewLoginLog("password", "login", req.LoginContext)
+	event.Account = MaskLoginAccount(req.Username)
+	defer func() {
+		if err != nil {
+			err = s.recordLoginFailure(event, err)
+		}
+	}()
 	account := strings.TrimSpace(req.Username)
 	now := time.Now()
 
@@ -277,6 +289,7 @@ func (s *Service) Login(req LoginRequest) (*AuthSessionResult, error) {
 		}
 		return nil, err
 	}
+	loginLogUser(event, user)
 	if user.Status != model.UserStatusActive {
 		s.recordLoginLog(user.ID, account, "", "password", "failure", "user_disabled", req.IP, req.UserAgent, now)
 		return nil, kernel.Forbidden("该账号已被禁用")
@@ -293,26 +306,27 @@ func (s *Service) Login(req LoginRequest) (*AuthSessionResult, error) {
 	if err := s.host.EnsureSignupBonus(user.ID); err != nil {
 		return nil, err
 	}
-	s.host.RecordActivity(user.ID, "login", 1)
-	result, err := s.createAuthSession(user)
-	if err != nil {
-		s.recordLoginLog(user.ID, account, "", "password", "failure", "session_error", req.IP, req.UserAgent, now)
-		return nil, err
-	}
-	// 成功——从 session cookie 中提取 sessionID 记录日志。
-	sessionID, _ := parseSessionCookie(result.Session)
-	s.recordLoginLog(user.ID, account, sessionID, "password", "success", "", req.IP, req.UserAgent, now)
-	return result, nil
+	return s.createAuthSession(user, event)
 }
 
-func (s *Service) Logout(cookieValue string) error {
-	sessionID, _ := parseSessionCookie(cookieValue)
-	if sessionID == "" {
+func (s *Service) Logout(cookieValue string, contexts ...LoginContext) (err error) {
+	sessionID, token := parseSessionCookie(cookieValue)
+	if sessionID == "" || token == "" {
 		return nil
 	}
-	// 回填登出时间（best-effort，不阻断登出流程）。
-	_ = s.repo.UpdateLoginLogLogout(sessionID, time.Now())
-	return s.repo.DeleteAuthSession(sessionID)
+	var context LoginContext
+	if len(contexts) > 0 {
+		context = contexts[0]
+	}
+	event := NewLoginLog("unknown", "logout", context)
+	event.Event = "logout"
+	event.SessionRef = HashToken(sessionID)
+	defer func() {
+		if err != nil {
+			err = s.recordLoginFailure(event, err)
+		}
+	}()
+	return s.repo.RevokeAuthSessionWithLog(sessionID, HashToken(token), event)
 }
 
 func (s *Service) CurrentUser(cookieValue string) (*model.User, error) {
@@ -346,12 +360,18 @@ func (s *Service) CurrentUser(cookieValue string) (*model.User, error) {
 // 认证响应只补充当前用户自己的第三方公开身份，不把身份表或密钥字段暴露给其他列表接口。
 func (s *Service) PublicAuthUser(user *model.User) (AuthUser, error) {
 	result := AuthUser{User: *user}
+	if user.AvatarMode == "custom" {
+		result.AvatarURL = profileAvatarURL(user)
+	}
 	identity, err := s.repo.UserIdentityForUser(user.ID, "linuxdo")
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return result, nil
 	}
 	if err != nil {
 		return AuthUser{}, err
+	}
+	if user.AvatarMode == "" {
+		result.AvatarURL = identity.AvatarURL
 	}
 	result.IdentityProvider = identity.Provider
 	result.IdentityID = identity.Subject
@@ -362,7 +382,8 @@ func (s *Service) PublicAuthUser(user *model.User) (AuthUser, error) {
 	return result, nil
 }
 
-func (s *Service) createAuthSession(user *model.User) (*AuthSessionResult, error) {
+func (s *Service) createAuthSession(user *model.User, event *model.LoginLog) (*AuthSessionResult, error) {
+	loginLogUser(event, user)
 	publicUser, err := s.PublicAuthUser(user)
 	if err != nil {
 		return nil, err
@@ -377,9 +398,12 @@ func (s *Service) createAuthSession(user *model.User) (*AuthSessionResult, error
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	if err := s.repo.Create(&session); err != nil {
-		return nil, err
+	event.SessionRef = HashToken(session.ID)
+	event.CreatedAt = now.UTC()
+	if err := s.repo.CreateAuthSessionForUser(user, &session, event); err != nil {
+		return nil, profileWriteError(err)
 	}
+	s.host.RecordActivity(user.ID, "login", 1)
 	return &AuthSessionResult{User: publicUser, Session: session.ID + "." + token, MaxAgeSecs: int(sessionMaxAge.Seconds())}, nil
 }
 

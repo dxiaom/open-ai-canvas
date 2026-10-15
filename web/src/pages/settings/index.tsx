@@ -1,6 +1,6 @@
 import { App, Button, InputNumber } from "antd";
 import { SettingsRow } from "@/components/ui/product/settings-row";
-import { ArrowLeft, Boxes, Brain, Bug, Cloud, MessageSquareText, RadioTower, ScrollText, SlidersHorizontal, UserRound, Workflow } from "lucide-react";
+import { ArrowLeft, Boxes, Brain, Bug, Cloud, MessageSquareText, RadioTower, SlidersHorizontal, UserRound, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
@@ -19,12 +19,12 @@ import { ProfilePane } from "./profile-pane";
 import { LoginLogsPane } from "./login-logs-pane";
 import { RUNNINGHUB_PLUGIN_ID } from "@/lib/plugins/builtin/workflows";
 import { usePluginStore } from "@/stores/use-plugin-store";
+import { ProfilePane } from "./profile-pane";
 
-type ConfigSectionKey = "profile" | "login-logs" | "channels" | "models" | "runninghub" | "preferences" | "prompts" | "agent-memory" | "storage" | "diagnostics";
+type ConfigSectionKey = "profile" | "channels" | "models" | "runninghub" | "preferences" | "prompts" | "agent-memory" | "storage" | "diagnostics";
 
 const configSections: Array<{ key: ConfigSectionKey; label: string; description: string; icon: ReactNode }> = [
-    { key: "profile", label: "个人资料", description: "头像、昵称、邮箱与密码", icon: <UserRound className="size-4" /> },
-    { key: "login-logs", label: "登录日志", description: "查看登录记录与安全审计", icon: <ScrollText className="size-4" /> },
+    { key: "profile", label: "个人信息", description: "头像、密码与邮箱", icon: <UserRound className="size-4" /> },
     { key: "channels", label: "个人渠道", description: "模型服务与个人工作流", icon: <RadioTower className="size-4" /> },
     { key: "runninghub", label: "RunningHub 工作流", description: "个人渠道的云端工作流配置", icon: <Workflow className="size-4" /> },
     { key: "models", label: "模型选择", description: "按领域选择默认模型", icon: <Boxes className="size-4" /> },
@@ -49,8 +49,7 @@ export default function SettingsPage() {
     const runningHubPluginEnabled = runtimeStatuses[RUNNINGHUB_PLUGIN_ID] === "enabled";
     const requestedSectionEnabled = requestedSection !== "runninghub" || runningHubPluginEnabled;
     const initialSection = isConfigSection(requestedSection) && requestedSectionEnabled ? requestedSection : "profile";
-    const [activeTab, setActiveTab] = useState<ConfigSectionKey>(initialSection === "channels" && !customChannelsEnabled ? "profile" : initialSection);
-    const [allowUserS3, setAllowUserS3] = useState(true);
+    const [activeTab, setActiveTab] = useState<ConfigSectionKey>(initialSection === "channels" && !customChannelsEnabled ? "models" : initialSection);
     const config = useConfigStore((state) => state.config);
     const effectiveConfig = useEffectiveConfig();
     const updateConfig = useConfigStore((state) => state.updateConfig);
@@ -72,7 +71,7 @@ export default function SettingsPage() {
             setActiveTab(requestedSection);
             return;
         }
-        setActiveTab((current) => (visibleConfigSections.some((section) => section.key === current) ? current : "profile"));
+        setActiveTab(requestedSection === "channels" && !customChannelsEnabled ? "models" : "profile");
     }, [customChannelsEnabled, requestedSection, visibleConfigSections]);
 
     useEffect(() => {
@@ -128,21 +127,8 @@ export default function SettingsPage() {
     };
 
     const panes: Record<ConfigSectionKey, ReactNode> = {
-        profile: (
-            <SettingsPane>
-                <ProfilePane />
-            </SettingsPane>
-        ),
-        "login-logs": (
-            <SettingsPane>
-                <LoginLogsPane />
-            </SettingsPane>
-        ),
-        channels: (
-            <SettingsPane>
-                <ChannelSettingsPane onOpenModels={() => selectSection("models")} onOpenRunningHub={runningHubPluginEnabled ? () => selectSection("runninghub") : undefined} />
-            </SettingsPane>
-        ),
+        profile: <SettingsPane><ProfilePane key={userId} /></SettingsPane>,
+        channels: <SettingsPane><ChannelSettingsPane onOpenModels={() => selectSection("models")} onOpenRunningHub={runningHubPluginEnabled ? () => selectSection("runninghub") : undefined} /></SettingsPane>,
         models: (
             <SettingsPane>
                 <div className="settings-pane-header">
