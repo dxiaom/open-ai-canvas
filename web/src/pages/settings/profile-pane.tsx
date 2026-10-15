@@ -349,8 +349,15 @@ export function ProfilePane() {
                                         </button>
                                     </div>
                                 )}
-                                <span>账号 · {profile.user.username}</span>
-                                <span className="text-xs text-foreground/50">{profile.user.role === "admin" ? "管理员" : "创作者"}</span>
+                                <div className="flex items-center gap-2 text-sm text-foreground/55">
+                                    <span className="inline-flex items-center gap-1">
+                                        <span className="text-foreground/35">@</span>
+                                        <span>{profile.user.username}</span>
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: profile.user.role === "admin" ? "var(--user-accent-soft)" : "var(--user-surface-muted)", color: profile.user.role === "admin" ? "var(--user-accent)" : "var(--user-ink-muted)" }}>
+                                        {profile.user.role === "admin" ? "管理员" : "创作者"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </section>

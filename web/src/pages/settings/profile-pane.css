@@ -90,6 +90,7 @@
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.3;
 }
 .profile-overview-identity span {
     overflow: hidden;
