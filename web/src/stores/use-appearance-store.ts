@@ -3,6 +3,7 @@ import { DEFAULT_CANVAS_APPEARANCE } from "@/lib/canvas/agent-appearance";
 import { DEFAULT_UPDATE_ANNOUNCEMENT, normalizeUpdateAnnouncement } from "@/lib/update-announcement";
 
 import type { PublicAppearance } from "@/services/api/appearance";
+import { apiBaseURL } from "@/services/api/request";
 import { applySkinTheme, DEFAULT_CLASSIC_SKIN, normalizeSkinDefinition } from "@/lib/skin-themes";
 
 export const DEFAULT_PUBLIC_APPEARANCE: PublicAppearance = {
@@ -178,7 +179,17 @@ function normalizeBrandSlug(value: unknown) {
 function safeAppearanceURL(value: unknown, fallback: string) {
     const candidate = String(value || "").trim();
     if (!candidate) return fallback;
-    if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
+    if (candidate.startsWith("/") && !candidate.startsWith("//")) {
+        if (apiBaseURL.startsWith("http")) {
+            try {
+                const origin = new URL(apiBaseURL).origin;
+                return origin + candidate;
+            } catch {
+                // fall through
+            }
+        }
+        return candidate;
+    }
     try {
         const parsed = new URL(candidate);
         if (parsed.protocol === "https:") return parsed.toString();
