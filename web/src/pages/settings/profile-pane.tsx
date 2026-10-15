@@ -310,7 +310,13 @@ export function ProfilePane() {
                             <p>头像会同步显示在工作区和创作消息中。</p>
                         </div>
                         <div className="profile-overview-main">
-                            <UserAvatar user={profile.user} className="profile-avatar-preview" />
+                            <button type="button" className="profile-avatar-hover" disabled={!!pending} onClick={openAvatarDialog} aria-label="更换头像">
+                                <UserAvatar user={profile.user} className="profile-avatar-preview" />
+                                <span className="profile-avatar-hover-overlay">
+                                    <ImagePlus className="size-4" />
+                                    <span>更换头像</span>
+                                </span>
+                            </button>
                             <div className="profile-overview-identity">
                                 {editingNickname ? (
                                     <div className="flex items-center gap-2">
@@ -346,9 +352,6 @@ export function ProfilePane() {
                                 <span>账号 · {profile.user.username}</span>
                                 <span className="text-xs text-foreground/50">{profile.user.role === "admin" ? "管理员" : "创作者"}</span>
                             </div>
-                            <Button type="primary" icon={<ImagePlus className="size-4" />} disabled={!!pending} onClick={openAvatarDialog}>
-                                更换头像
-                            </Button>
                         </div>
                     </section>
 
