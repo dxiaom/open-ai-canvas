@@ -265,6 +265,7 @@ func cors() (gin.HandlerFunc, error) {
 			c.Header("Access-Control-Allow-Credentials", "true")
 			c.Header("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers")
 		}
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate")
 		c.Header("Access-Control-Allow-Headers", corsAllowedHeaders)
 		c.Header("Access-Control-Expose-Headers", "X-Request-ID, X-Canvas-Trace-ID, X-Diagnostic-Bundle-ID, X-Diagnostic-Schema-Version")
 		c.Header("Access-Control-Allow-Methods", corsAllowedMethods)
