@@ -84,19 +84,19 @@ export function LoginLogsPane() {
                     <div className="space-y-2">
                         {logs.map((log) => (
                             <div key={log.id} className="flex items-center gap-3 rounded-md border border-border/50 px-3 py-2.5 text-sm">
-                                <div className="shrink-0">{log.status === "success" ? <CheckCircle2 className="size-4 text-green-500" /> : <XCircle className="size-4 text-red-500" />}</div>
+                                <div className="shrink-0">{log.result === "success" ? <CheckCircle2 className="size-4 text-green-500" /> : <XCircle className="size-4 text-red-500" />}</div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <span className="font-medium">{methodLabels[log.method] || log.method}</span>
-                                        <Tag color={log.status === "success" ? "success" : "error"} className="m-0">
-                                            {log.status === "success" ? "成功" : "失败"}
+                                        <Tag color={log.result === "success" ? "success" : "error"} className="m-0">
+                                            {log.result === "success" ? "成功" : "失败"}
                                         </Tag>
-                                        {log.failureReason && <span className="text-xs text-foreground/50">{failureLabels[log.failureReason] || log.failureReason}</span>}
+                                        {log.message && <span className="text-xs text-foreground/50">{log.message}</span>}
                                     </div>
                                     <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/50">
                                         <span className="inline-flex items-center gap-1">
                                             <Clock className="size-3" />
-                                            {formatTime(log.loginAt)}
+                                            {formatTime(log.createdAt)}
                                         </span>
                                         {log.ip && (
                                             <span className="inline-flex items-center gap-1">
@@ -108,7 +108,6 @@ export function LoginLogsPane() {
                                             <Monitor className="size-3" />
                                             {parseUserAgent(log.userAgent)}
                                         </span>
-                                        {log.location && <span>{log.location}</span>}
                                     </div>
                                 </div>
                             </div>

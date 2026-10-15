@@ -479,15 +479,17 @@ export type LoginLogEntry = {
     id: string;
     userId?: string;
     username: string;
-    sessionId?: string;
+    displayName: string;
+    account: string;
+    event: string;
     method: string;
-    status: string;
-    failureReason?: string;
+    source: string;
+    result: string;
     ip: string;
     userAgent: string;
-    location?: string;
-    loginAt: string;
-    logoutAt?: string;
+    sessionRef: string;
+    reason: string;
+    message: string;
     createdAt: string;
 };
 
