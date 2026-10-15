@@ -38,7 +38,7 @@
     width: 88px;
     height: 88px;
     flex-shrink: 0;
-    border-radius: var(--r-lg);
+    border-radius: 50%;
     object-fit: cover;
     object-position: center;
     background: var(--user-surface);
@@ -167,7 +167,7 @@
     width: 104px;
     height: 104px;
     flex-shrink: 0;
-    border-radius: var(--user-radius-control);
+    border-radius: 50%;
     object-fit: cover;
     object-position: center;
     background: var(--user-surface-muted);
