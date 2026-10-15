@@ -10,13 +10,6 @@ const methodLabels: Record<string, string> = {
     libtv: "LibTV",
 };
 
-const failureLabels: Record<string, string> = {
-    invalid_credentials: "账号或密码错误",
-    user_disabled: "账号已禁用",
-    rate_limited: "请求过于频繁",
-    session_error: "会话创建失败",
-};
-
 function formatTime(iso: string) {
     const d = new Date(iso);
     return d.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
