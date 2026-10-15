@@ -8,6 +8,7 @@ import { UserOSSSettingsForm } from "@/components/layout/user-oss-settings-form"
 import { refreshSystemChannels } from "@/lib/user-session";
 import { defaultConfig, useConfigStore, useEffectiveConfig } from "@/stores/use-config-store";
 import { useUserStore } from "@/stores/use-user-store";
+import { getUserOSSSetting } from "@/services/api/resources";
 import { ChannelSettingsPane, channelValidationError, focusInvalidChannelField, isChannelReady } from "./channel-settings-pane";
 import { ModelDefaultGrid } from "./model-default-grid";
 import { PromptPreferencesPane } from "./prompt-preferences-pane";
@@ -55,11 +56,13 @@ export default function SettingsPage() {
     const shouldPromptContinue = searchParams.get("continue") === "1";
     const userId = useUserStore((state) => state.user?.id);
     const userChannels = config.channels.filter((channel) => channel.scope !== "system");
+    const [allowUserS3, setAllowUserS3] = useState(true);
     const visibleConfigSections = useMemo(
         () =>
             (customChannelsEnabled ? configSections : configSections.filter((section) => section.key !== "channels"))
-                .filter((section) => section.key !== "runninghub" || runningHubPluginEnabled),
-        [customChannelsEnabled, runningHubPluginEnabled],
+                .filter((section) => section.key !== "runninghub" || runningHubPluginEnabled)
+                .filter((section) => section.key !== "storage" || allowUserS3),
+        [customChannelsEnabled, runningHubPluginEnabled, allowUserS3],
     );
 
     const isVisibleConfigSection = (value: string | null): value is ConfigSectionKey => isConfigSection(value) && visibleConfigSections.some((section) => section.key === value);
@@ -82,6 +85,15 @@ export default function SettingsPage() {
             cancelled = true;
         };
     }, [message, userId]);
+
+    useEffect(() => {
+        if (!userId) return;
+        let cancelled = false;
+        void getUserOSSSetting().then((res) => {
+            if (!cancelled) setAllowUserS3(res.setting.allowUserS3);
+        }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [userId]);
 
     const selectSection = (section: ConfigSectionKey) => {
         if (section === "runninghub" && !runningHubPluginEnabled) return;
