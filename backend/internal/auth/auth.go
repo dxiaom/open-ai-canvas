@@ -68,6 +68,7 @@ type AuthSessionResult struct {
 
 type AuthUser struct {
 	model.User
+	AvatarURL        string `json:"avatarUrl,omitempty"`
 	IdentityProvider string `json:"identityProvider,omitempty"`
 	IdentityID       string `json:"identityId,omitempty"`
 	IdentityUsername string `json:"identityUsername,omitempty"`
@@ -278,26 +279,21 @@ func (s *Service) Login(req LoginRequest) (result *AuthSessionResult, err error)
 		}
 	}()
 	account := strings.TrimSpace(req.Username)
-	now := time.Now()
-
-	// 查找用户——即使不存在也记录登录日志（失败）。
 	user, err := s.repo.UserByAccount(account)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			s.recordLoginLog("", account, "", "password", "failure", "invalid_credentials", req.IP, req.UserAgent, now)
 			return nil, kernel.Unauthorized("用户名、邮箱或密码不正确")
 		}
 		return nil, err
 	}
 	loginLogUser(event, user)
 	if user.Status != model.UserStatusActive {
-		s.recordLoginLog(user.ID, account, "", "password", "failure", "user_disabled", req.IP, req.UserAgent, now)
 		return nil, kernel.Forbidden("该账号已被禁用")
 	}
 	if !verifyPassword(req.Password, user.PasswordHash) {
-		s.recordLoginLog(user.ID, account, "", "password", "failure", "invalid_credentials", req.IP, req.UserAgent, now)
 		return nil, kernel.Unauthorized("用户名、邮箱或密码不正确")
 	}
+	now := time.Now()
 	user.LastLoginAt = &now
 	user.UpdatedAt = now
 	if err := s.repo.UpdateUserLoginTime(user.ID, now); err != nil {
@@ -376,9 +372,6 @@ func (s *Service) PublicAuthUser(user *model.User) (AuthUser, error) {
 	result.IdentityProvider = identity.Provider
 	result.IdentityID = identity.Subject
 	result.IdentityUsername = identity.ProviderUsername
-	if result.AvatarURL == "" {
-		result.AvatarURL = identity.AvatarURL
-	}
 	return result, nil
 }
 
@@ -476,34 +469,4 @@ func ValidateEmail(value string) error {
 		return kernel.BadAuthRequest("邮箱格式不正确")
 	}
 	return nil
-}
-
-// recordLoginLog 记录一条登录日志（best-effort，不阻断登录流程）。
-func (s *Service) recordLoginLog(userID, username, sessionID, method, status, failureReason, ip, userAgent string, loginAt time.Time) {
-	entry := &model.LoginLog{
-		ID:            kernel.NewID(),
-		UserID:        userID,
-		Username:      username,
-		SessionID:     sessionID,
-		Method:        method,
-		Status:        status,
-		FailureReason: failureReason,
-		IP:            ip,
-		UserAgent:     userAgent,
-		LoginAt:       loginAt,
-		CreatedAt:     time.Now(),
-	}
-	if err := s.repo.CreateLoginLog(entry); err != nil {
-		log.Printf("auth: failed to record login log: %v", err)
-	}
-}
-
-// LoginLogsByUser 查询指定用户的登录日志。
-func (s *Service) LoginLogsByUser(userID string, limit, offset int) ([]model.LoginLog, int64, error) {
-	return s.repo.LoginLogsByUser(userID, limit, offset)
-}
-
-// AllLoginLogs 查询全部登录日志（管理员）。
-func (s *Service) AllLoginLogs(keyword, status, method string, limit, offset int) ([]model.LoginLog, int64, error) {
-	return s.repo.AllLoginLogs(keyword, status, method, limit, offset)
 }

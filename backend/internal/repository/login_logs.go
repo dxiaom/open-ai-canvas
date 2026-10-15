@@ -106,3 +106,8 @@ func (r *Repository) RevokeAuthSessionWithLog(sessionID, tokenHash string, event
 		return tx.Create(event).Error
 	})
 }
+
+func (r *Repository) DeleteLoginLogsBefore(before time.Time) (int64, error) {
+	result := r.db.Where("created_at < ?", before).Delete(&model.LoginLog{})
+	return result.RowsAffected, result.Error
+}

@@ -144,26 +144,6 @@ func RegisterAuthRoutes(r *gin.RouterGroup, svc *service.Service) {
 		setSessionCookie(c, result.Session, result.MaxAgeSecs)
 		ok(c, gin.H{"user": result.User})
 	})
-	r.GET("/auth/login-logs", func(c *gin.Context) {
-		user, err := currentUser(c, svc)
-		if err != nil {
-			failService(c, err)
-			return
-		}
-		page, pageSize, err := parsePaginationQuery(c, 20)
-		if err != nil {
-			fail(c, http.StatusBadRequest, err)
-			return
-		}
-		limit := pageSize
-		offset := (page - 1) * pageSize
-		logs, total, err := svc.LoginLogsByUser(user.ID, limit, offset)
-		if err != nil {
-			failService(c, err)
-			return
-		}
-		ok(c, gin.H{"logs": logs, "total": total})
-	})
 	r.GET("/auth/linuxdo/start", func(c *gin.Context) {
 		if !enforceRateLimit(c, "linuxdo-start:"+c.ClientIP(), 20, 10*time.Minute) {
 			return

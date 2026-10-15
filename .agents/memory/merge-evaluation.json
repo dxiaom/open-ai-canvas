@@ -1,0 +1,36 @@
+{
+  "topic": "merge-evaluation",
+  "date": "2026-10-14",
+  "baselineCommit": "65f62347",
+  "originMain": "22acf8d2",
+  "summary": "main 的登录日志和个人资料/头像实现明显更好，建议以 main 为基准，补入本地的两个优势功能",
+  "loginLogs": {
+    "verdict": "main 更好",
+    "mainAdvantages": [
+      "Event/Source/Result 三维正交事件建模",
+      "账号脱敏、会话哈希化、输入清洗",
+      "单事务登出（校验→删除→写日志）",
+      "前端四维筛选 + 详情抽屉 + URL参数全同步",
+      "独立 API 模块和 UA 精细解析"
+    ],
+    "localAdvantages": [
+      "自动清理（90天保留策略 login_log_cleanup.go）",
+      "用户侧设置面板（login-logs-pane.tsx，普通用户可查自己的登录历史）"
+    ],
+    "recommendation": "以 main 为基准，补入自动清理和用户侧面板"
+  },
+  "avatarProfile": {
+    "verdict": "main 明显更好",
+    "mainAdvantages": [
+      "头像独立二进制表 + 服务端归一化（居中裁剪512px PNG）",
+      "8种系统预设头像",
+      "前端 ImageCropDialog 裁剪组件",
+      "邮箱验证码更换流程",
+      "密码修改 + 首次设置两种场景",
+      "Linux.do 重新认证",
+      "URL 严格正则校验防注入"
+    ],
+    "localAdvantages": [],
+    "recommendation": "直接用 main 版本"
+  }
+}

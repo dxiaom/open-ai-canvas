@@ -13,7 +13,6 @@ import (
 type UpdateProfileRequest struct {
 	DisplayName *string `json:"displayName"`
 	Email       *string `json:"email"`
-	AvatarURL   *string `json:"avatarUrl"`
 }
 
 type ChangePasswordRequest struct {
@@ -50,15 +49,6 @@ func (s *Service) UpdateProfile(user *model.User, req UpdateProfileRequest) (*mo
 				}
 			}
 			updates["email"] = email
-		}
-	}
-	if req.AvatarURL != nil {
-		avatarURL := strings.TrimSpace(*req.AvatarURL)
-		if len(avatarURL) > 512 {
-			return nil, kernel.BadAuthRequest("头像 URL 过长")
-		}
-		if avatarURL != user.AvatarURL {
-			updates["avatar_url"] = avatarURL
 		}
 	}
 	if len(updates) == 1 {
