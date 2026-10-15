@@ -5,6 +5,13 @@
             "destination": "/index.html"
         }
     ],
+    "redirects": [
+        {
+            "source": "/api/*",
+            "destination": "https://huabu-api.wavee.cn/api/:splat",
+            "statusCode": 302
+        }
+    ],
     "headers": [
         {
             "source": "/index.html",
