@@ -1,6 +1,7 @@
 // 站点外观设置的素材选择、Logo 主题预览、骨架屏与草稿校验。
 
 import { type AdminAppearance, type AppearanceAssetSlot } from "@/services/api/appearance";
+import { apiBaseURL } from "@/services/api/request";
 import { type ReactNode, type RefObject, useEffect, useMemo } from "react";
 import { Image as ImageIcon, MonitorPlay, Upload } from "lucide-react";
 import { Button, Skeleton } from "antd";
@@ -72,15 +73,27 @@ export function useAppearancePreviews(setting: AdminAppearance | null, files: Dr
     return useMemo(() => {
         if (!setting) return { logoLight: DEFAULT_PUBLIC_APPEARANCE.logoUrl, logoDark: DEFAULT_PUBLIC_APPEARANCE.darkLogoUrl, video: DEFAULT_PUBLIC_APPEARANCE.authVideoUrl, poster: DEFAULT_PUBLIC_APPEARANCE.authVideoPosterUrl };
         const customVideo = Boolean(files.video || (!resets.video && setting.authVideoResourceId));
-        const lightLogo = logoObjectURL || (!resets.logo && setting.logoResourceId ? setting.public.logoUrl : "");
-        const darkLogo = darkLogoObjectURL || (!resets["logo-dark"] && setting.darkLogoResourceId ? setting.public.darkLogoUrl : "");
+        const lightLogo = logoObjectURL || (!resets.logo && setting.logoResourceId ? resolveAssetURL(setting.public.logoUrl) : "");
+        const darkLogo = darkLogoObjectURL || (!resets["logo-dark"] && setting.darkLogoResourceId ? resolveAssetURL(setting.public.darkLogoUrl) : "");
         return {
             logoLight: lightLogo || darkLogo || DEFAULT_PUBLIC_APPEARANCE.logoUrl,
             logoDark: darkLogo || lightLogo || DEFAULT_PUBLIC_APPEARANCE.darkLogoUrl,
-            video: videoObjectURL || (resets.video ? DEFAULT_PUBLIC_APPEARANCE.authVideoUrl : setting.public.authVideoUrl),
-            poster: posterObjectURL || (resets.poster ? (customVideo ? "" : DEFAULT_PUBLIC_APPEARANCE.authVideoPosterUrl) : setting.public.authVideoPosterUrl),
+            video: videoObjectURL || (resets.video ? DEFAULT_PUBLIC_APPEARANCE.authVideoUrl : resolveAssetURL(setting.public.authVideoUrl)),
+            poster: posterObjectURL || (resets.poster ? (customVideo ? "" : DEFAULT_PUBLIC_APPEARANCE.authVideoPosterUrl) : resolveAssetURL(setting.public.authVideoPosterUrl)),
         };
     }, [darkLogoObjectURL, files.video, logoObjectURL, posterObjectURL, resets, setting, videoObjectURL]);
+}
+
+function resolveAssetURL(url: string): string {
+    if (!url) return "";
+    if (url.startsWith("/") && !url.startsWith("//") && apiBaseURL.startsWith("http")) {
+        try {
+            return new URL(apiBaseURL).origin + url;
+        } catch {
+            // fall through
+        }
+    }
+    return url;
 }
 
 export function LogoThemePreview({ label, icon, src, dark, frameEnabled }: { label: string; icon: ReactNode; src: string; dark: boolean; frameEnabled: boolean }) {
