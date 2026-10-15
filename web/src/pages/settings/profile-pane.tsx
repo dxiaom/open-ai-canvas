@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { App, Avatar, Button, Form, Input, Skeleton } from "antd";
-import { BadgeCheck, Crop, ImagePlus, KeyRound, Mail, RefreshCw, ShieldCheck } from "lucide-react";
+import { BadgeCheck, Crop, ImagePlus, KeyRound, Mail, Pencil, RefreshCw, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
@@ -13,7 +13,7 @@ import { DEFAULT_USER_AVATARS } from "@/lib/default-user-avatars";
 import { cropProfileAvatar } from "@/services/profile-avatar";
 import { loadProfileSession } from "@/services/profile-session";
 import { applyUserSession } from "@/lib/user-session";
-import { invalidateAuthSessionCache, type LocalUser } from "@/services/api/auth";
+import { invalidateAuthSessionCache, updateProfile, type LocalUser } from "@/services/api/auth";
 import { changeProfileEmail, changeProfilePassword, profileLinuxDOReauthURL, requestProfileEmailCode, selectDefaultProfileAvatar, uploadProfileAvatar, type UserProfile } from "@/services/api/profile";
 import { ApiError } from "@/services/api/request";
 import { useUserStore } from "@/stores/use-user-store";
@@ -42,6 +42,8 @@ export function ProfilePane() {
     const [pending, setPending] = useState<PendingAction | null>(null);
     const pendingRef = useRef(false);
     const [errors, setErrors] = useState({ avatar: "", password: "", email: "" });
+    const [editingNickname, setEditingNickname] = useState(false);
+    const [nicknameValue, setNicknameValue] = useState("");
     const [draftAvatar, setDraftAvatar] = useState<{ file: File; url: string; sourceFile: File } | null>(null);
     const [cropSource, setCropSource] = useState<{ file: File; url: string } | null>(null);
     const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -310,8 +312,39 @@ export function ProfilePane() {
                         <div className="profile-overview-main">
                             <UserAvatar user={profile.user} className="profile-avatar-preview" />
                             <div className="profile-overview-identity">
-                                <strong>{profile.user.displayName || profile.user.username}</strong>
+                                {editingNickname ? (
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            value={nicknameValue}
+                                            onChange={(e) => setNicknameValue(e.target.value)}
+                                            onPressEnter={async () => {
+                                                const trimmed = nicknameValue.trim();
+                                                if (!trimmed || trimmed === profile.user.displayName) { setEditingNickname(false); return; }
+                                                try {
+                                                    const { user } = await updateProfile({ displayName: trimmed });
+                                                    useUserStore.getState().setUser(user);
+                                                    await queryClient.invalidateQueries({ queryKey });
+                                                    message.success("昵称已更新");
+                                                } catch (err) { message.error(err instanceof Error ? err.message : "更新失败"); }
+                                                setEditingNickname(false);
+                                            }}
+                                            onBlur={() => setEditingNickname(false)}
+                                            autoFocus
+                                            size="small"
+                                            maxLength={80}
+                                            style={{ width: 160 }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5">
+                                        <strong>{profile.user.displayName || profile.user.username}</strong>
+                                        <button type="button" className="inline-flex size-4 items-center justify-center text-foreground/40 hover:text-foreground" aria-label="编辑昵称" onClick={() => { setNicknameValue(profile.user.displayName || ""); setEditingNickname(true); }}>
+                                            <Pencil className="size-3" />
+                                        </button>
+                                    </div>
+                                )}
                                 <span>账号 · {profile.user.username}</span>
+                                <span className="text-xs text-foreground/50">{profile.user.role === "admin" ? "管理员" : "创作者"}</span>
                             </div>
                             <Button type="primary" icon={<ImagePlus className="size-4" />} disabled={!!pending} onClick={openAvatarDialog}>
                                 更换头像
