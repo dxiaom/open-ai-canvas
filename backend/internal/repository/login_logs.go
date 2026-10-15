@@ -15,6 +15,7 @@ type LoginLogFilter struct {
 	Method  string
 	Result  string
 	IP      string
+	UserID  string
 	From    *time.Time
 	To      *time.Time
 }
@@ -38,6 +39,9 @@ func (r *Repository) LoginLogs(filter LoginLogFilter, limit, offset int) ([]mode
 	}
 	if filter.IP != "" {
 		query = query.Where("ip = ?", filter.IP)
+	}
+	if filter.UserID != "" {
+		query = query.Where("user_id = ?", filter.UserID)
 	}
 	if filter.From != nil {
 		query = query.Where("created_at >= ?", filter.From.UTC())

@@ -6,6 +6,7 @@ import (
 
 	"yingce/backend/internal/auth"
 	"yingce/backend/internal/model"
+	"yingce/backend/internal/repository"
 )
 
 const SessionCookieName = auth.SessionCookieName
@@ -243,6 +244,10 @@ func (s *Service) ChangePassword(user *model.User, req ChangePasswordRequest) er
 
 func (s *Service) StartLoginLogCleanup() {
 	s.authDomain().StartLoginLogCleanup()
+}
+
+func (s *Service) LoginLogsByUser(userID string, limit, offset int) ([]model.LoginLog, int64, error) {
+	return s.repo.LoginLogs(repository.LoginLogFilter{UserID: userID}, limit, offset)
 }
 
 func hashPassword(password string) (string, error) {
