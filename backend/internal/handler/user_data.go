@@ -543,12 +543,13 @@ func RegisterUserDataRoutes(r *gin.RouterGroup, svc *service.Service) {
 		}
 		etag := canvasProjectResponseETag(metadata)
 		c.Header("ETag", etag)
-		c.Header("Cache-Control", "private, no-cache")
 		addVaryHeader(c, "Accept-Encoding")
 		if ifNoneMatch(c.GetHeader("If-None-Match"), etag) {
+			// 304 保持 CORS 中间件的 Cache-Control: no-store，防止 EdgeOne 缓存无 CORS 头的 304
 			c.Status(http.StatusNotModified)
 			return
 		}
+		c.Header("Cache-Control", "private, no-cache")
 		project, err := svc.UserCanvasProject(user.ID, c.Param("id"))
 		if err != nil {
 			fail(c, http.StatusNotFound, err)
