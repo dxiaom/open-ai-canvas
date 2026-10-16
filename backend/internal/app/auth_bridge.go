@@ -123,6 +123,7 @@ func (s *Service) authDomain() *auth.Service {
 	}
 	domain := auth.New(s.repo, authHost{svc: s}, nil)
 	domain.SetSMSDelivery(s.smsDomain())
+	domain.SetAvatarStorage(avatarStorageAdapter{svc: s})
 	return domain
 }
 

@@ -52,7 +52,18 @@ type Service struct {
 	emailCodeMu    sync.Mutex
 	registrationMu sync.Mutex
 	sms            SMSDelivery
+	avatarStorage  AvatarStorage
 }
+
+// AvatarStorage abstracts reading and writing avatar images through the
+// system-configured resource storage (local disk or OSS/S3/R2/etc.).
+type AvatarStorage interface {
+	StoreAvatar(userID string, data []byte) (model.AvatarStorageLocation, error)
+	ReadAvatar(userID string, loc model.AvatarStorageLocation) ([]byte, error)
+	DeleteAvatar(userID string, loc model.AvatarStorageLocation) error
+}
+
+func (s *Service) SetAvatarStorage(storage AvatarStorage) { s.avatarStorage = storage }
 
 type SMSDelivery interface {
 	Available(string) (bool, error)

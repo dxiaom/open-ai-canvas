@@ -42,7 +42,31 @@ func avatarTestService(t *testing.T) (*Service, *gorm.DB, *model.User) {
 	if err := db.Create(user).Error; err != nil {
 		t.Fatal(err)
 	}
-	return New(repository.New(db), nil, nil), db, user
+	svc := New(repository.New(db), nil, nil)
+	svc.SetAvatarStorage(&testAvatarStorage{store: map[string][]byte{}})
+	return svc, db, user
+}
+
+type testAvatarStorage struct {
+	store map[string][]byte
+}
+
+func (t *testAvatarStorage) StoreAvatar(userID string, data []byte) (model.AvatarStorageLocation, error) {
+	key := userID + "/" + kernel.NewID()
+	t.store[key] = data
+	return model.AvatarStorageLocation{Provider: "local", ObjectKey: key}, nil
+}
+
+func (t *testAvatarStorage) ReadAvatar(userID string, loc model.AvatarStorageLocation) ([]byte, error) {
+	if data, ok := t.store[loc.ObjectKey]; ok {
+		return data, nil
+	}
+	return nil, errors.New("not found")
+}
+
+func (t *testAvatarStorage) DeleteAvatar(userID string, loc model.AvatarStorageLocation) error {
+	delete(t.store, loc.ObjectKey)
+	return nil
 }
 
 func avatarFileHeader(t *testing.T, data []byte) *multipart.FileHeader {
@@ -165,7 +189,7 @@ func TestProfileAvatarRequiresActiveAuthenticatedOwner(t *testing.T) {
 	avatarStatus(t, err, 403)
 	_, err = s.ProfileAvatarContent(staleActive, actor.ID)
 	avatarStatus(t, err, 403)
-	_, err = s.repo.UpdateUserAvatar(actor.ID, []byte("cannot-write"), "version", "", actor.UpdatedAt)
+	_, err = s.repo.UpdateUserAvatar(actor.ID, []byte("cannot-write"), model.AvatarStorageLocation{}, "version", "", actor.UpdatedAt)
 	if !errors.Is(err, repository.ErrProfileAvatarUserUnavailable) {
 		t.Fatalf("repository permitted disabled user write: %v", err)
 	}

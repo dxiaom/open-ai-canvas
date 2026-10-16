@@ -107,17 +107,47 @@ func (s *Service) saveProfileAvatar(user *model.User, data []byte, version strin
 	if err != nil {
 		return nil, err
 	}
-	updated, err := s.repo.UpdateUserAvatar(user.ID, data, version, preset, time.Now())
+
+	// For custom avatars, store the image through the system-configured storage.
+	var loc model.AvatarStorageLocation
+	if len(data) > 0 && s.avatarStorage != nil {
+		loc, err = s.avatarStorage.StoreAvatar(user.ID, data)
+		if err != nil {
+			return nil, kernel.WrapAppError(500, "头像存储失败", err)
+		}
+	}
+
+	// Fetch the previous avatar so we can clean up the old stored object.
+	prevAvatar, _ := s.repo.UserAvatar(user.ID)
+
+	updated, err := s.repo.UpdateUserAvatar(user.ID, data, loc, version, preset, time.Now())
 	if errors.Is(err, repository.ErrProfileAvatarUserUnavailable) {
+		// Roll back the just-uploaded object if the DB write failed.
+		if len(data) > 0 && s.avatarStorage != nil {
+			_ = s.avatarStorage.DeleteAvatar(user.ID, loc)
+		}
 		return nil, kernel.Forbidden("该账号已被禁用或不存在")
 	}
 	if err != nil {
+		if len(data) > 0 && s.avatarStorage != nil {
+			_ = s.avatarStorage.DeleteAvatar(user.ID, loc)
+		}
 		return nil, err
 	}
+
+	// Clean up the previous avatar object (best-effort).
+	if prevAvatar != nil && prevAvatar.HasStorageLocation() && s.avatarStorage != nil {
+		_ = s.avatarStorage.DeleteAvatar(user.ID, prevAvatar.StorageLocation())
+	}
+
 	result.User = *updated
 	result.AvatarURL = ""
 	if updated.AvatarMode == "custom" {
-		result.AvatarURL = profileAvatarURL(updated)
+		if loc.PublicURL != "" {
+			result.AvatarURL = loc.PublicURL
+		} else {
+			result.AvatarURL = profileAvatarURL(updated)
+		}
 	}
 	return &result, nil
 }
@@ -140,7 +170,15 @@ func (s *Service) ProfileAvatarContent(actor *model.User, targetUserID string) (
 	if err != nil {
 		return nil, err
 	}
-	return avatar.Data, nil
+	// New avatars are stored in the system resource storage.
+	if avatar.HasStorageLocation() && s.avatarStorage != nil {
+		return s.avatarStorage.ReadAvatar(user.ID, avatar.StorageLocation())
+	}
+	// Legacy avatars stored as raw bytes in the database.
+	if len(avatar.Data) > 0 {
+		return avatar.Data, nil
+	}
+	return nil, kernel.NotFound("头像图片不存在")
 }
 
 func normalizeProfileAvatar(data []byte) ([]byte, error) {
