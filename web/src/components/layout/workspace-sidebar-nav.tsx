@@ -131,12 +131,13 @@ function WorkspaceSidebarProfile({ collapsed, user, onExpand, onCollapse }: { co
 }
 
 function WorkspaceSwitcher({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void; onExpand: () => void; onCollapse: () => void }) {
-    const appearance = useAppearanceStore((state) => state.appearance);
+    // 外观未解析完成时不显示默认站名，避免闪现内置品牌名。
+    const brandName = useAppearanceStore((state) => (state.resolved ? state.appearance.brandName : ""));
 
     if (collapsed) {
         return (
             <div className="app-workspace-sidebar-brand-row relative shrink-0 flex items-center justify-center px-3 pt-3">
-                <Link to="/" onClick={onNavigate} className="app-workspace-sidebar-brand-button group" aria-label={`${appearance.brandName}首页`}>
+                <Link to="/" onClick={onNavigate} className="app-workspace-sidebar-brand-button group" aria-label={`${brandName || "工作台"}首页`}>
                     <BrandLogoFrame
                         className="app-workspace-brand-mark grid size-8 shrink-0 place-items-center rounded-[var(--r-sm)] shadow-sm"
                         logoClassName="size-5 object-contain"
@@ -150,7 +151,7 @@ function WorkspaceSwitcher({ collapsed, onNavigate }: { collapsed: boolean; onNa
 
     return (
         <div className="app-workspace-sidebar-brand-row relative shrink-0 px-3 pt-3">
-            <Link to="/" onClick={onNavigate} className="app-workspace-sidebar-brand-button group" aria-label={`${appearance.brandName}首页`}>
+            <Link to="/" onClick={onNavigate} className="app-workspace-sidebar-brand-button group" aria-label={`${brandName || "工作台"}首页`}>
                 <span className="flex min-w-0 items-center gap-2">
                     <BrandLogoFrame
                         className="app-workspace-brand-mark grid size-8 shrink-0 place-items-center rounded-[var(--r-sm)] shadow-sm"
@@ -159,7 +160,7 @@ function WorkspaceSwitcher({ collapsed, onNavigate }: { collapsed: boolean; onNa
                         fallback={<InfinityIcon className="size-4" strokeWidth={2.2} />}
                     />
                     <span className="flex min-w-0 flex-col">
-                        <span className="app-workspace-brand-wordmark truncate text-[var(--fs-body)] leading-none font-semibold">{appearance.brandName}</span>
+                        <span className="app-workspace-brand-wordmark truncate text-[var(--fs-body)] leading-none font-semibold">{brandName}</span>
                         <span className="mt-1 truncate text-[var(--fs-label)] leading-none text-foreground/60">创作工作台</span>
                     </span>
                 </span>

@@ -25,7 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export function WorkspaceTopBar({ sidebarOpen, onToggleSidebar }: { sidebarOpen: boolean; onToggleSidebar: () => void }) {
-    const brandName = useAppearanceStore((state) => state.appearance.brandName);
+    const brandName = useAppearanceStore((state) => (state.resolved ? state.appearance.brandName : ""));
     const theme = useThemeStore((state) => state.theme);
     const setTheme = useThemeStore((state) => state.setTheme);
     const user = useUserStore((state) => state.user);

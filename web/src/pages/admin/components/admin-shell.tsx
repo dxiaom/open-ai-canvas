@@ -138,6 +138,7 @@ export function AdminShell() {
 function AdminShellLayout() {
     const { density } = useAdminDensity();
     const appearance = useAppearanceStore((state) => state.appearance);
+    const appearanceResolved = useAppearanceStore((state) => state.resolved);
     const [collapsed, setCollapsed] = useState(readWorkspaceSidebarCollapsed);
     const dark = useThemeStore((state) => state.theme === "dark");
 
@@ -166,7 +167,7 @@ function AdminShellLayout() {
                                 <AppChangelogButton
                                     className={cn("admin-sidebar-brand-button", collapsed && "is-collapsed")}
                                     icon={<BrandLogoFrame className="admin-sidebar-brand-mark grid shrink-0 place-items-center bg-foreground text-background" logoClassName="size-5 object-contain" alt="" fallback={<InfinityIcon className="size-4" />} />}
-                                    label={appearance.brandName}
+                                    label={appearanceResolved ? appearance.brandName : ""}
                                     showLabel={!collapsed}
                                     showVersion={!collapsed}
                                     labelClassName="admin-sidebar-brand-title"

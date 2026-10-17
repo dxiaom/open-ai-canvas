@@ -18,6 +18,8 @@ const github = "https://github.com/ddcat-ai/open-ai-canvas";
 export default function WelcomePage() {
     const [look, setLook] = useState(getWelcomeLook);
     const appearance = useAppearanceStore((state) => state.appearance);
+    // 外观未解析完成时不显示默认站名，避免闪现内置品牌名。
+    const brandName = useAppearanceStore((state) => (state.resolved ? state.appearance.brandName : ""));
     const restorePickerFocus = useRef(false);
     useEffect(() => {
         if (!restorePickerFocus.current) return;
@@ -40,7 +42,7 @@ export default function WelcomePage() {
     };
     return (
         <ConfigProvider theme={getAntThemeConfig(true, appearance.activeSkin)}>
-            <WelcomeExperience key={look.id} look={look} brandName={appearance.brandName} onLookChange={changeLook} />
+            <WelcomeExperience key={look.id} look={look} brandName={brandName} onLookChange={changeLook} />
         </ConfigProvider>
     );
 }
