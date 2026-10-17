@@ -59,7 +59,14 @@ func (s *Service) ossSettingForResource(userID string, resource *model.Resource)
 				// 凭据。存储位置未变时沿用当前策略，避免历史资源因管理员
 				// 刚补齐 CDN 鉴权配置而继续回源。
 				setting.Delivery = current.Delivery
+			} else {
+			// 资源存放在系统存储（用户无自有配置）时同理：分发策略跟随当前
+			// 管理端配置，避免存储位置快照里的旧 cdnAuthMode 让资源永远回源站。
+			if _, systemValue, systemErr := s.readOSSSetting(); systemErr == nil && resourceStorageMatches(systemValue, resource) {
+				setting.CDNBaseURL = systemValue.CDNBaseURL
+				setting.Delivery = systemValue.Delivery
 			}
+		}
 		}
 	} else {
 		// 早期资源没有 StorageSettingID，但资源本身仍记录了 provider/endpoint/bucket。
