@@ -31,15 +31,13 @@ export function AppProviders({ children }: { children: ReactNode }) {
     const theme = useActiveTheme();
     const dark = theme === "dark";
     const appearance = useAppearanceStore((state) => state.appearance);
-    const appearanceResolved = useAppearanceStore((state) => state.resolved);
 
     useLayoutEffect(() => {
         document.documentElement.classList.toggle("dark", dark);
         document.documentElement.style.colorScheme = theme;
         applySkinTheme(appearance.activeSkin, theme);
-        // 元数据（标题/图标/SEO）等后端外观到达后再应用，避免先写入内置默认品牌再切换。
-        if (appearanceResolved) applyAppearanceMetadata(appearance);
-    }, [appearance, appearanceResolved, dark, theme]);
+        applyAppearanceMetadata(appearance);
+    }, [appearance, dark, theme]);
 
     // DEV 复现台必须是同源本地确定性场景：AuthSessionHydrator 会打 /api/auth/session，
     // ClientRootInit 会打 /api/model-catalog，没有后端时产生真实 502，与导演台无关却会污染判据。

@@ -18,8 +18,6 @@ const github = "https://github.com/ddcat-ai/open-ai-canvas";
 export default function WelcomePage() {
     const [look, setLook] = useState(getWelcomeLook);
     const appearance = useAppearanceStore((state) => state.appearance);
-    // 外观未解析完成时不显示默认站名，避免闪现内置品牌名。
-    const brandName = useAppearanceStore((state) => (state.resolved ? state.appearance.brandName : ""));
     const restorePickerFocus = useRef(false);
     useEffect(() => {
         if (!restorePickerFocus.current) return;
@@ -42,7 +40,7 @@ export default function WelcomePage() {
     };
     return (
         <ConfigProvider theme={getAntThemeConfig(true, appearance.activeSkin)}>
-            <WelcomeExperience key={look.id} look={look} brandName={brandName} onLookChange={changeLook} />
+            <WelcomeExperience key={look.id} look={look} brandName={appearance.brandName} onLookChange={changeLook} />
         </ConfigProvider>
     );
 }
@@ -120,7 +118,7 @@ function WelcomeExperience({ look, brandName, onLookChange }: { look: WelcomeLoo
             </aside>
 
             <main>
-                <section ref={storyRef} id="story" className="welcome-story" aria-label="影策创作之旅">
+                <section ref={storyRef} id="story" className="welcome-story" aria-label="影镜智绘创作之旅">
                     <div className={`welcome-stage chapter-${chapter}${staticScene ? " is-static" : ""}`}>
                         <div className={`welcome-poster${ready && !staticScene ? " is-ready" : ""}`} aria-hidden="true"><img src={look.frames[staticScene ? chapter * 2 : 0]} alt="" fetchPriority="high" /></div>
                         {!staticScene && <SceneBoundary onError={() => setFailed(true)}><Suspense fallback={null}><StoryReel look={look} progress={progressRef} paused={paused} onReady={() => setReady(true)} onError={() => setFailed(true)} /></Suspense></SceneBoundary>}
