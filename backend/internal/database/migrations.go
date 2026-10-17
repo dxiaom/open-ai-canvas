@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const CurrentSchemaVersion int64 = 57
+const CurrentSchemaVersion int64 = 58
 
 const baselineSchemaChecksum = "sha256:open-ai-canvas-schema-v1-20260830"
 const schemaMigrationAppliedAtIndexChecksum = "sha256:schema-migrations-applied-at-index-v2-20260830"
@@ -196,7 +196,8 @@ var schemaMigrations = []migration{
 		return nil
 	}},
 	{version: 56, name: "sql_perf_indexes", checksum: "sha256:sql-perf-indexes-v56-20261016", apply: migrateSchemaV56},
-	{version: 57, name: "user_avatar_storage", checksum: "sha256:user-avatar-storage-v57-20261016", apply: func(tx *gorm.DB) error {
+	{version: 57, name: "canvas_multi_session_sync", checksum: "sha256:canvas-multi-session-sync-v57", apply: migrateCanvasCollaboration},
+	{version: 58, name: "user_avatar_storage", checksum: "sha256:user-avatar-storage-v58-20261016", apply: func(tx *gorm.DB) error {
 		return tx.AutoMigrate(&model.UserAvatar{})
 	}},
 }

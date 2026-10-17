@@ -79,3 +79,4 @@ backend/tmp_*
 /web/public/live2d/live2dcubismcore.min.js.map
 .zocde/
 canvas-backend-linux
+web.zip
