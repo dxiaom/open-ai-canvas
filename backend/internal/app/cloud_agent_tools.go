@@ -112,9 +112,9 @@ func compileCloudAgentTools(req CloudAgentRequest, includeProfileTool bool) []ma
 				"type": "object",
 				"properties": map[string]any{
 					"id": str("稳定字段 ID，如 aspectRatio"), "title": str("字段显示名称"),
-					"type":         map[string]any{"type": "string", "enum": []string{"single_select", "segmented", "text", "textarea", "model_picker"}},
+					"type":         map[string]any{"type": "string", "enum": []string{"single_select", "multi_select", "segmented", "text", "textarea", "model_picker"}},
 					"options":      map[string]any{"type": "array", "maxItems": 8, "items": map[string]any{"type": "object", "properties": map[string]any{"id": str("稳定选项 ID"), "label": str("选项名称"), "detail": str("可选说明"), "recommended": map[string]any{"type": "boolean"}}, "required": []string{"label"}, "additionalProperties": false}},
-					"defaultValue": str("推荐默认值；可选"), "required": map[string]any{"type": "boolean"}, "allowCustom": map[string]any{"type": "boolean"}, "placeholder": str("可选输入提示"),
+					"defaultValue": map[string]any{"anyOf": []any{str("推荐默认值；可选"), map[string]any{"type": "array", "items": str("默认选项")}}}, "required": map[string]any{"type": "boolean"}, "allowCustom": map[string]any{"type": "boolean"}, "placeholder": str("输入提示"),
 				},
 				"required": []string{"id", "title", "type"}, "additionalProperties": false,
 			}},
